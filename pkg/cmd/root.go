@@ -4,7 +4,6 @@ import (
 	hfClientSet "github.com/hobbyfarm/gargantua/pkg/client/clientset/versioned/typed/hobbyfarm.io/v1"
 	command "github.com/rancher/wrangler-cli"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -16,7 +15,6 @@ type Hfcli struct {
 
 var (
 	Namespace string
-	RestConfig *rest.Config
 	HfClient *hfClientSet.HobbyfarmV1Client
 )
 
@@ -41,7 +39,7 @@ func (h *Hfcli) Run(cmd *cobra.Command, args []string) error {
 
 func (h *Hfcli) PersistentPre(cmd *cobra.Command, args []string) error {
 	var err error
-	RestConfig, err = clientcmd.BuildConfigFromFlags("", h.Kubeconfig)
+	RestConfig, err := clientcmd.BuildConfigFromFlags("", h.Kubeconfig)
 	if err != nil {
 		return err
 	}

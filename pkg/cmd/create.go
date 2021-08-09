@@ -55,5 +55,5 @@ func (sc *Scenario) Run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return scenario.Apply(s, RestConfig)
+	return scenario.Apply(s, HfClient)
 }

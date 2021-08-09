@@ -13,3 +13,7 @@ type FilenameWithContent struct {
 	FileName string
 	Content  []byte
 }
+
+const (
+	DefaultKeepAliveDuration = "10m"
+)

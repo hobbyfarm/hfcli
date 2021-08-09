@@ -1,20 +1,17 @@
 package scenario
 
 import (
-	"crypto/sha256"
-	"encoding/base32"
 	"encoding/base64"
 	"fmt"
+	"github.com/BurntSushi/toml"
+	"github.com/ghodss/yaml"
+	hf "github.com/hobbyfarm/gargantua/pkg/apis/hobbyfarm.io/v1"
 	"io/ioutil"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
-
-	"github.com/BurntSushi/toml"
-	"github.com/ghodss/yaml"
-	hf "github.com/hobbyfarm/gargantua/pkg/apis/hobbyfarm.io/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func ParseScenario(name string, namespace string, path string) (s *hf.Scenario, err error) {
@@ -43,12 +40,12 @@ func ParseScenario(name string, namespace string, path string) (s *hf.Scenario, 
 		Spec: *scenarioSpec,
 	}
 
-	hasher := sha256.New()
-	hasher.Write([]byte(name))
-	sha := base32.StdEncoding.WithPadding(-1).EncodeToString(hasher.Sum(nil))[:10]
-	s.Spec.Id = fmt.Sprint("s-%s", sha)
+	s.Spec.Id = name
 	s.Spec.Name = base64.StdEncoding.EncodeToString([]byte(name))
 
+	if s.Spec.KeepAliveDuration == "" {
+		s.Spec.KeepAliveDuration = DefaultKeepAliveDuration
+	}
 	return s, nil
 }
 
@@ -68,6 +65,7 @@ func processScenarioYAML(absPath string) (s *hf.ScenarioSpec, err error) {
 	err = yaml.Unmarshal(scenarioFileContent, s)
 	// need to b64 encode the name and description
 	s.Name = base64.StdEncoding.EncodeToString([]byte(s.Name))
+	s.Description = base64.StdEncoding.EncodeToString([]byte(s.Description))
 	return s, err
 }
 
@@ -130,7 +128,7 @@ func readFiles(path string, files []os.DirEntry) (steps []hf.ScenarioStep, err e
 func parseToml(content []byte, fileName string) (s StepWithID, err error) {
 	type obj struct {
 		Title  string `toml:"title"`
-		Weight int    `toml:"weight"`
+		Weight *int    `toml:"weight"`
 	}
 
 	tmp := obj{}
@@ -144,7 +142,15 @@ func parseToml(content []byte, fileName string) (s StepWithID, err error) {
 		return s, err
 	}
 
-	s.Weight = tmp.Weight
+	if tmp.Weight == nil {
+		tw := 1000
+		tmp.Weight = &tw
+	}
+	s.Weight = *tmp.Weight
+	if s.Weight == 0 {
+		// stuff without a declared weight should move to tbe bottom
+		s.Weight = 1000
+	}
 	// b64 encode the title and content
 	s.Step.Title = base64.StdEncoding.EncodeToString([]byte(tmp.Title))
 	s.Step.Content = base64.StdEncoding.EncodeToString(noTomlContent)
