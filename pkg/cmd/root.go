@@ -25,6 +25,7 @@ func App() *cobra.Command {
 	})
 	root.AddCommand(
 		NewCreate(),
+		NewInfo(),
 	)
 	return root
 }
