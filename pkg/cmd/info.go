@@ -46,7 +46,9 @@ func (ie *InfoEmail) Run(cmd *cobra.Command, args []string) error {
 	return info.GetEmail(args[0], HfClient)
 }
 
-type InfoAccessCode struct{}
+type InfoAccessCode struct{
+	Stats bool `usage:"stats" default:"false" short:"s"`
+}
 
 func NewInfoAccessCode() *cobra.Command{
 	infoAccessCodeCmd := command.Command(&InfoAccessCode{}, cobra.Command{
@@ -62,5 +64,5 @@ func (iac *InfoAccessCode) Run(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	}
 
-	return info.GetAccessCode(args[0], HfClient)
+	return info.GetAccessCode(args[0], HfClient, iac.Stats)
 }

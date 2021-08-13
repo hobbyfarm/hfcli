@@ -24,7 +24,7 @@ func App() *cobra.Command {
 		SilenceErrors: true,
 	})
 	root.AddCommand(
-		NewCreate(),
+		NewApply(),
 		NewInfo(),
 	)
 	return root

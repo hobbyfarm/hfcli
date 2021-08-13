@@ -7,20 +7,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type Create struct{}
+type Apply struct{}
 
-func NewCreate() *cobra.Command {
-	create := command.Command(&Create{}, cobra.Command{
-		Use:       "create",
-		Short:     "create objects, valid options are scenario",
+func NewApply() *cobra.Command {
+	create := command.Command(&Apply{}, cobra.Command{
+		Use:       "apply",
+		Short:     "apply objects, valid options are scenario",
 	})
 	create.AddCommand(
-		NewCreateScenario(),
+		NewApplyScenario(),
 	)
 	return create
 }
 
-func (c *Create) Run(cmd *cobra.Command, args []string) error {
+func (a *Apply) Run(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		return cmd.Help()
 	}
@@ -29,7 +29,7 @@ func (c *Create) Run(cmd *cobra.Command, args []string) error {
 
 type Scenario struct{}
 
-func NewCreateScenario() *cobra.Command {
+func NewApplyScenario() *cobra.Command {
 	createScenario := command.Command(&Scenario{}, cobra.Command{
 		Use:   "scenario",
 		Short: "create scenario NAME PATH_TO_SCENARIOS",

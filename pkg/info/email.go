@@ -29,12 +29,12 @@ func GetEmail(email string, hfc *hfClientSet.HobbyfarmV1Client) (err error){
 	}
 
 
-	return print([]SessionDetails{*sDetails})
+	return printReport([]SessionDetails{*sDetails})
 }
 
 
 
-func GetAccessCode(accesscode string, hfc *hfClientSet.HobbyfarmV1Client) (err error){
+func GetAccessCode(accesscode string, hfc *hfClientSet.HobbyfarmV1Client, stats bool) (err error){
 
 	seList, err := hfc.ScheduledEvents().List(context.TODO(), metav1.ListOptions{})
 
@@ -82,7 +82,11 @@ func GetAccessCode(accesscode string, hfc *hfClientSet.HobbyfarmV1Client) (err e
 		}
 		sDetails = append(sDetails, *s)
 	}
-	return print(sDetails)
+
+	if stats {
+		return printStats(sDetails)
+	}
+	return printReport(sDetails)
 }
 
 func getUser(email string, hfc *hfClientSet.HobbyfarmV1Client)(userid string, err error){
@@ -199,19 +203,39 @@ func getVirtualMachinesForVMC(vmc string, hfc *hfClientSet.HobbyfarmV1Client)(vm
 	return vmList, nil
 }
 
-func print(sessions []SessionDetails) (error){
+func printReport(sessions []SessionDetails) error{
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', tabwriter.Debug)
-	fmt.Fprintln(w, "SESSION \t VMID \t STATUS \t PUBLICIP\t")
+	fmt.Fprintln(w, "SESSION\t VMID\t STATUS\t PUBLICIP\t")
 	for _, s := range sessions {
 		for sessionID, vmList := range s.SessionVMMap {
-			var output string
-			output = fmt.Sprintf("%s\t", sessionID)
+			session := fmt.Sprintf("%s\t", sessionID)
 			for _, vm := range vmList{
-				output = fmt.Sprintf("%s %s\t %s\t %s\t", output, vm.Spec.Id, vm.Status.Status, vm.Status.PublicIP)
+				output := fmt.Sprintf("%s %s\t %s\t %s\t", session, vm.Spec.Id, vm.Status.Status, vm.Status.PublicIP)
 				fmt.Fprintln(w, output)
 			}
 		}
 	}
 
 	return  w.Flush()
+}
+
+func printStats(sessions []SessionDetails) error{
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', tabwriter.Debug)
+	fmt.Fprintln(w, "TOTAL COUNT\t RUNNING VM's\t PENDING VM's\t")
+	var total, running, pending int
+	for _, session := range sessions{
+		for _, vmList := range session.SessionVMMap{
+			total = total + len(vmList)
+			for _, vm := range vmList {
+				if vm.Status.Status == "running" {
+					running++
+				} else {
+					pending++
+				}
+			}
+		}
+	}
+
+	fmt.Fprintf(w, "%d\t %d\t %d\t\n", total, running, pending)
+	return w.Flush()
 }

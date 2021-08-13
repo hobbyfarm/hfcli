@@ -40,6 +40,9 @@ func ParseScenario(name string, namespace string, path string) (s *hf.Scenario, 
 		Spec: *scenarioSpec,
 	}
 
+	annotations := make(map[string]string)
+	annotations["managedBy"] = "hfcli"
+	s.Annotations = annotations
 	s.Spec.Id = name
 	s.Spec.Name = base64.StdEncoding.EncodeToString([]byte(name))
 
