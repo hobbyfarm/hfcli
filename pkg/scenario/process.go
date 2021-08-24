@@ -3,15 +3,17 @@ package scenario
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/BurntSushi/toml"
-	"github.com/ghodss/yaml"
-	hf "github.com/hobbyfarm/gargantua/pkg/apis/hobbyfarm.io/v1"
 	"io/ioutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
+
+	"github.com/BurntSushi/toml"
+	"github.com/ghodss/yaml"
+	hf "github.com/hobbyfarm/gargantua/pkg/apis/hobbyfarm.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func ParseScenario(name string, namespace string, path string) (s *hf.Scenario, err error) {
@@ -131,31 +133,30 @@ func readFiles(path string, files []os.DirEntry) (steps []hf.ScenarioStep, err e
 func parseToml(content []byte, fileName string) (s StepWithID, err error) {
 	type obj struct {
 		Title  string `toml:"title"`
-		Weight *int    `toml:"weight"`
+		Weight *int   `toml:"weight"`
 	}
 
+	// empty defaults
+	title := extractFilename(fileName)
+	tw := 1000
 	tmp := obj{}
 	frontMatter, noTomlContent := extractTOML(content)
 
-	if len(frontMatter) == 0 {
-		return s, fmt.Errorf("no frontmatter found in file %s", fileName)
+	if len(frontMatter) != 0 {
+		if _, err := toml.Decode(string(frontMatter), &tmp); err != nil {
+			return s, err
+		}
 	}
 
-	if _, err := toml.Decode(string(frontMatter), &tmp); err != nil {
-		return s, err
+	if tmp.Weight != nil {
+		tw = *tmp.Weight
 	}
 
-	if tmp.Weight == nil {
-		tw := 1000
-		tmp.Weight = &tw
+	s.Weight = tw
+	if tmp.Title != "" {
+		title = tmp.Title
 	}
-	s.Weight = *tmp.Weight
-	if s.Weight == 0 {
-		// stuff without a declared weight should move to tbe bottom
-		s.Weight = 1000
-	}
-	// b64 encode the title and content
-	s.Step.Title = base64.StdEncoding.EncodeToString([]byte(tmp.Title))
+	s.Step.Title = base64.StdEncoding.EncodeToString([]byte(title))
 	s.Step.Content = base64.StdEncoding.EncodeToString(noTomlContent)
 	return s, nil
 }
@@ -178,4 +179,10 @@ func extractTOML(content []byte) (toml []byte, noToml []byte) {
 	toml = r2.ReplaceAll(tmp, []byte(""))
 	noToml = r.ReplaceAll(content, []byte(""))
 	return toml, noToml
+}
+
+func extractFilename(pathToFile string) (fileName string) {
+	fileNameArr := strings.Split(pathToFile, "/")
+	fileName = fileNameArr[len(fileNameArr)-1]
+	return fileName
 }
