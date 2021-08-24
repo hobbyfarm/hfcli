@@ -3,7 +3,7 @@ module github.com/hobbyfarm/hfcli
 go 1.16
 
 replace (
-	github.com/hobbyfarm/gargantua => ../../hobbyfarm/gargantua
+	github.com/hobbyfarm/gargantua => github.com/hobbyfarm/gargantua v0.2.2-0.20210823170529-e2466136c002
 	k8s.io/client-go => k8s.io/client-go v0.20.0
 )
 
