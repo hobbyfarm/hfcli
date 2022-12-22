@@ -40,3 +40,9 @@ func Apply(s *hf.Scenario, hfc *hfClientSet.HobbyfarmV1Client) (err error) {
 
 	return err
 }
+
+func Get(name string, hfc *hfClientSet.HobbyfarmV1Client) (s *hf.Scenario, err error) {
+	logrus.Infof("downloading scenario %s", name)
+
+	return hfc.Scenarios().Get(context.TODO(), name, v1.GetOptions{})
+}

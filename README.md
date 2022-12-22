@@ -12,6 +12,7 @@ Usage:
 Available Commands:
   apply       apply objects, valid options are scenario
   completion  generate the autocompletion script for the specified shell
+  get         get objects, valid options are scenario  
   help        Help about any command
   info        perform info operations, valid options are accesscode and email
 
@@ -23,7 +24,7 @@ Flags:
 Use "hfcli [command] --help" for more information about a command.
 ```
 
-Currently hfcli supports two key tasks:
+Currently, hfcli supports these tasks:
 
 ## apply
 
@@ -76,7 +77,31 @@ ls -lart
 
 `title`: defines the name of the step, if not specified the name of the file is used as the step name
 
-`weight`: defines the order of the step. Lower is setup earlier. If a step doesnt have a weight, then files are ordered alphabetically and added with a default weight.
+`weight`: defines the order of the step. Lower is set up earlier. If a step doesn't have a weight, then files are ordered alphabetically and added with a default weight.
+
+## get
+
+get downloads an existing scenario into a directory structure that can be used by apply.
+
+```
+get objects, valid options are scenario
+
+Usage:
+  hfcli get [flags]
+  hfcli get [command]
+
+Available Commands:
+  scenario    get scenario NAME PATH_TO_SCENARIO
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+  -k, --kubeconfig string   kubeconfig for authentication
+  -n, --namespace string    namespace (default "gargantua")
+
+Use "hfcli get [command] --help" for more information about a command.
+```
 
 ## info
 

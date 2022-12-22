@@ -8,15 +8,15 @@ import (
 
 type Info struct{}
 
-func NewInfo() *cobra.Command{
+func NewInfo() *cobra.Command {
 	infoCmd := command.Command(&Info{}, cobra.Command{
-		Use: "info",
+		Use:   "info",
 		Short: "perform info operations, valid options are accesscode and email",
 	})
 	infoCmd.AddCommand(
 		NewInfoEmail(),
 		NewInfoAccessCode(),
-		)
+	)
 	return infoCmd
 }
 
@@ -29,9 +29,9 @@ func (i *Info) Run(cmd *cobra.Command, args []string) error {
 
 type InfoEmail struct{}
 
-func NewInfoEmail() *cobra.Command{
+func NewInfoEmail() *cobra.Command {
 	infoEmailCmd := command.Command(&InfoEmail{}, cobra.Command{
-		Use: "email",
+		Use:   "email",
 		Short: "get info about session and infra associated with email address",
 	})
 
@@ -46,13 +46,13 @@ func (ie *InfoEmail) Run(cmd *cobra.Command, args []string) error {
 	return info.GetEmail(args[0], HfClient)
 }
 
-type InfoAccessCode struct{
+type InfoAccessCode struct {
 	Stats bool `usage:"stats" default:"false" short:"s"`
 }
 
-func NewInfoAccessCode() *cobra.Command{
+func NewInfoAccessCode() *cobra.Command {
 	infoAccessCodeCmd := command.Command(&InfoAccessCode{}, cobra.Command{
-		Use: "accesscode",
+		Use:   "accesscode",
 		Short: "hfcli info accesscode ACCESS_CODE",
 	})
 
