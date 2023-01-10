@@ -103,6 +103,30 @@ Global Flags:
 Use "hfcli get [command] --help" for more information about a command.
 ```
 
+## delete
+
+deletes an existing scenario from hobbyfarm
+
+```
+deletes objects, valid options are scenario
+
+Usage:
+  hfcli deletes [flags]
+  hfcli deletes [command]
+
+Available Commands:
+  scenario    deletes scenario NAME
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+  -k, --kubeconfig string   kubeconfig for authentication
+  -n, --namespace string    namespace (default "gargantua")
+
+Use "hfcli get [command] --help" for more information about a command.
+```
+
 ## info
 
 info can be used to search for information about an accesscode or a user

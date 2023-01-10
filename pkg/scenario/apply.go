@@ -46,3 +46,9 @@ func Get(name string, hfc *hfClientSet.HobbyfarmV1Client) (s *hf.Scenario, err e
 
 	return hfc.Scenarios().Get(context.TODO(), name, v1.GetOptions{})
 }
+
+func Delete(name string, hfc *hfClientSet.HobbyfarmV1Client) (err error) {
+	logrus.Infof("deleting scenario %s", name)
+
+	return hfc.Scenarios().Delete(context.TODO(), name, v1.DeleteOptions{})
+}
