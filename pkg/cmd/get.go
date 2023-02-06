@@ -33,21 +33,12 @@ func NewGetScenario() *cobra.Command {
 	getScenario := command.Command(&GetScenario{}, cobra.Command{
 		Use:   "scenario",
 		Short: "get scenario NAME PATH_TO_SCENARIO",
+		Args:  cobra.ExactArgs(2),
 	})
 	return getScenario
 }
 
 func (sc *GetScenario) Run(cmd *cobra.Command, args []string) error {
-	if len(args) < 2 {
-		logrus.Error("not enough arguments supplied")
-		return cmd.Help()
-	}
-
-	if len(args) > 2 {
-		logrus.Error("too many arguments supplied")
-		return cmd.Help()
-	}
-
 	logrus.Info(args[0], args[1])
 	s, err := scenario.Get(args[0], HfClient)
 
