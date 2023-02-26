@@ -15,7 +15,7 @@ type Hfcli struct {
 
 var (
 	Namespace string
-	HfClient *hfClientSet.HobbyfarmV1Client
+	HfClient  *hfClientSet.HobbyfarmV1Client
 )
 
 func App() *cobra.Command {
@@ -25,6 +25,8 @@ func App() *cobra.Command {
 	})
 	root.AddCommand(
 		NewApply(),
+		NewDelete(),
+		NewGet(),
 		NewInfo(),
 	)
 	return root

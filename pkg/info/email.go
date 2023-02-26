@@ -16,7 +16,7 @@ type SessionDetails struct {
 	SessionVMMap map[string][]hf.VirtualMachine
 }
 
-func GetEmail(email string, hfc *hfClientSet.HobbyfarmV1Client) (err error){
+func GetEmail(email string, hfc *hfClientSet.HobbyfarmV1Client) (err error) {
 
 	userid, err := getUser(email, hfc)
 	if err != nil {
@@ -28,13 +28,10 @@ func GetEmail(email string, hfc *hfClientSet.HobbyfarmV1Client) (err error){
 		return err
 	}
 
-
 	return printReport([]SessionDetails{*sDetails})
 }
 
-
-
-func GetAccessCode(accesscode string, hfc *hfClientSet.HobbyfarmV1Client, stats bool) (err error){
+func GetAccessCode(accesscode string, hfc *hfClientSet.HobbyfarmV1Client, stats bool) (err error) {
 
 	seList, err := hfc.ScheduledEvents().List(context.TODO(), metav1.ListOptions{})
 
@@ -89,8 +86,8 @@ func GetAccessCode(accesscode string, hfc *hfClientSet.HobbyfarmV1Client, stats 
 	return printReport(sDetails)
 }
 
-func getUser(email string, hfc *hfClientSet.HobbyfarmV1Client)(userid string, err error){
-	users, err  := hfc.Users().List(context.TODO(), metav1.ListOptions{})
+func getUser(email string, hfc *hfClientSet.HobbyfarmV1Client) (userid string, err error) {
+	users, err := hfc.Users().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return userid, fmt.Errorf("no users found in cluster")
@@ -109,14 +106,14 @@ func getUser(email string, hfc *hfClientSet.HobbyfarmV1Client)(userid string, er
 	return userid, err
 }
 
-func getAllUsers(accesscode string, hfc *hfClientSet.HobbyfarmV1Client)(userIDS []string, err error) {
+func getAllUsers(accesscode string, hfc *hfClientSet.HobbyfarmV1Client) (userIDS []string, err error) {
 	userList, err := hfc.Users().List(context.TODO(), metav1.ListOptions{})
 
 	if err != nil {
-		if apierrors.IsNotFound(err){
+		if apierrors.IsNotFound(err) {
 			return userIDS, fmt.Errorf("no users found")
 		} else {
-			return	userIDS, err
+			return userIDS, err
 		}
 	}
 
@@ -130,7 +127,7 @@ func getAllUsers(accesscode string, hfc *hfClientSet.HobbyfarmV1Client)(userIDS 
 	return userIDS, nil
 }
 
-func getUserAllocatedVMs(userID string, hfc *hfClientSet.HobbyfarmV1Client)(sDetails *SessionDetails, err error) {
+func getUserAllocatedVMs(userID string, hfc *hfClientSet.HobbyfarmV1Client) (sDetails *SessionDetails, err error) {
 	sessionList, err := hfc.Sessions().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -166,7 +163,7 @@ func getUserAllocatedVMs(userID string, hfc *hfClientSet.HobbyfarmV1Client)(sDet
 	return sDetails, nil
 }
 
-func getVirtualMachinesForVMC(vmc string, hfc *hfClientSet.HobbyfarmV1Client)(vmList []hf.VirtualMachine, err error){
+func getVirtualMachinesForVMC(vmc string, hfc *hfClientSet.HobbyfarmV1Client) (vmList []hf.VirtualMachine, err error) {
 	vmClaim, err := hfc.VirtualMachineClaims().Get(context.TODO(), vmc, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -191,7 +188,7 @@ func getVirtualMachinesForVMC(vmc string, hfc *hfClientSet.HobbyfarmV1Client)(vm
 	for _, vm := range dbClaim.Status.VirtualMachineIds {
 		vmInfo, err := hfc.VirtualMachines().Get(context.TODO(), vm, metav1.GetOptions{})
 		if err != nil {
-			if apierrors.IsNotFound(err){
+			if apierrors.IsNotFound(err) {
 				continue
 			} else {
 				return vmList, err
@@ -203,28 +200,28 @@ func getVirtualMachinesForVMC(vmc string, hfc *hfClientSet.HobbyfarmV1Client)(vm
 	return vmList, nil
 }
 
-func printReport(sessions []SessionDetails) error{
+func printReport(sessions []SessionDetails) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', tabwriter.Debug)
 	fmt.Fprintln(w, "SESSION\t VMID\t STATUS\t PUBLICIP\t")
 	for _, s := range sessions {
 		for sessionID, vmList := range s.SessionVMMap {
 			session := fmt.Sprintf("%s\t", sessionID)
-			for _, vm := range vmList{
+			for _, vm := range vmList {
 				output := fmt.Sprintf("%s %s\t %s\t %s\t", session, vm.Spec.Id, vm.Status.Status, vm.Status.PublicIP)
 				fmt.Fprintln(w, output)
 			}
 		}
 	}
 
-	return  w.Flush()
+	return w.Flush()
 }
 
-func printStats(sessions []SessionDetails) error{
+func printStats(sessions []SessionDetails) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', tabwriter.Debug)
 	fmt.Fprintln(w, "TOTAL COUNT\t RUNNING VM's\t PENDING VM's\t")
 	var total, running, pending int
-	for _, session := range sessions{
-		for _, vmList := range session.SessionVMMap{
+	for _, session := range sessions {
+		for _, vmList := range session.SessionVMMap {
 			total = total + len(vmList)
 			for _, vm := range vmList {
 				if vm.Status.Status == "running" {

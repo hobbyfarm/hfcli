@@ -1,9 +1,10 @@
 package scenario
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -46,7 +47,9 @@ func ParseScenario(name string, namespace string, path string) (s *hf.Scenario, 
 	annotations["managedBy"] = "hfcli"
 	s.Annotations = annotations
 	s.Spec.Id = name
-	s.Spec.Name = base64.StdEncoding.EncodeToString([]byte(name))
+	if s.Spec.Name == "" {
+		s.Spec.Name = base64.StdEncoding.EncodeToString([]byte(name))
+	}
 
 	if s.Spec.KeepAliveDuration == "" {
 		s.Spec.KeepAliveDuration = DefaultKeepAliveDuration
@@ -61,7 +64,7 @@ func processScenarioYAML(absPath string) (s *hf.ScenarioSpec, err error) {
 		return s, err
 	}
 
-	scenarioFileContent, err := ioutil.ReadFile(scenarioFilePath)
+	scenarioFileContent, err := os.ReadFile(scenarioFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +106,7 @@ func readFiles(path string, files []os.DirEntry) (steps []hf.ScenarioStep, err e
 	for _, file := range files {
 		if !file.IsDir() {
 			filePath := filepath.Join(path, file.Name())
-			fileContent, err := ioutil.ReadFile(filePath)
+			fileContent, err := os.ReadFile(filePath)
 			if err != nil {
 				return steps, err
 			}
@@ -130,16 +133,16 @@ func readFiles(path string, files []os.DirEntry) (steps []hf.ScenarioStep, err e
 	return steps, nil
 }
 
-func parseToml(content []byte, fileName string) (s StepWithID, err error) {
-	type obj struct {
-		Title  string `toml:"title"`
-		Weight *int   `toml:"weight"`
-	}
+type stepMeta struct {
+	Title  string `toml:"title"`
+	Weight *int   `toml:"weight"`
+}
 
+func parseToml(content []byte, fileName string) (s StepWithID, err error) {
 	// empty defaults
 	title := extractFilename(fileName)
 	tw := 1000
-	tmp := obj{}
+	tmp := stepMeta{}
 	frontMatter, noTomlContent := extractTOML(content)
 
 	if len(frontMatter) != 0 {
@@ -178,11 +181,137 @@ func extractTOML(content []byte) (toml []byte, noToml []byte) {
 	r2 := regexp.MustCompile("\\+\\+\\+")
 	toml = r2.ReplaceAll(tmp, []byte(""))
 	noToml = r.ReplaceAll(content, []byte(""))
-	return toml, noToml
+	return toml, []byte(strings.Trim(string(noToml), "\n"))
 }
 
 func extractFilename(pathToFile string) (fileName string) {
 	fileNameArr := strings.Split(pathToFile, "/")
 	fileName = fileNameArr[len(fileNameArr)-1]
 	return fileName
+}
+
+func DumpScenario(s *hf.Scenario, path string) (err error) {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+
+	logrus.Infof("writing scenario %s to %s", s.Spec.Name, absPath)
+
+	err = writeScenarioYAML(s, absPath)
+	if err != nil {
+		return err
+	}
+
+	err = writeContents(s, absPath)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func writeScenarioYAML(s *hf.Scenario, path string) error {
+	logrus.Infof("creating scenario.yml")
+
+	scenarioFilePath := filepath.Join(path, "scenario.yml")
+
+	spec := s.Spec
+
+	// need to b64 decode the name and description
+	decodedName, err := base64.StdEncoding.DecodeString(s.Spec.Name)
+	if err != nil {
+		return err
+	}
+	spec.Name = string(decodedName)
+	decodedDescription, err := base64.StdEncoding.DecodeString(s.Spec.Description)
+	if err != nil {
+		return err
+	}
+	spec.Description = string(decodedDescription)
+	spec.Steps = nil
+
+	scenarioFileContent, err := yaml.Marshal(spec)
+
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(scenarioFilePath, scenarioFileContent, 0666)
+}
+
+func writeContents(s *hf.Scenario, path string) error {
+	contentDir := filepath.Join(path, "content")
+	contentDirPath, err := os.Stat(contentDir)
+	if err != nil {
+		err = os.Mkdir(contentDir, 0755)
+		if err != nil {
+			return err
+		}
+		contentDirPath, err = os.Stat(contentDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	if !contentDirPath.IsDir() {
+		err = fmt.Errorf("%s is not a directory", contentDirPath)
+		return err
+	}
+
+	files, err := os.ReadDir(contentDir)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		if !file.IsDir() {
+			err = os.Remove(filepath.Join(contentDir, file.Name()))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	for i, step := range s.Spec.Steps {
+		weight := i + 1
+		filename := filepath.Join(contentDir, fmt.Sprintf("step-%d.md", weight))
+		logrus.Infof("creating step %s", filename)
+
+		title, err := base64.StdEncoding.DecodeString(step.Title)
+		if err != nil {
+			return err
+		}
+
+		stepMeta := stepMeta{}
+		stepMeta.Title = string(title)
+		stepMeta.Weight = &weight
+
+		var firstBuffer bytes.Buffer
+		encoder := toml.NewEncoder(&firstBuffer)
+		err = encoder.Encode(stepMeta)
+		if err != nil {
+			return err
+		}
+
+		spacer := []byte("+++\n")
+
+		stepFileContent, err := base64.StdEncoding.DecodeString(step.Content)
+
+		if err != nil {
+			return err
+		}
+
+		content := append(spacer, firstBuffer.Bytes()...)
+		content = append(content, spacer...)
+		content = append(content, "\n"...)
+		content = append(content, stepFileContent...)
+		content = append(content, "\n"...)
+
+		err = os.WriteFile(filename, content, 0666)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

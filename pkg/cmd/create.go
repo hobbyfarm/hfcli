@@ -11,8 +11,8 @@ type Apply struct{}
 
 func NewApply() *cobra.Command {
 	create := command.Command(&Apply{}, cobra.Command{
-		Use:       "apply",
-		Short:     "apply objects, valid options are scenario",
+		Use:   "apply",
+		Short: "apply objects, valid options are scenario",
 	})
 	create.AddCommand(
 		NewApplyScenario(),
