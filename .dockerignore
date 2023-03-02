@@ -1,0 +1,9 @@
+.idea
+dist
+example
+.github
+README.md
+.gitignore
+.dockerignore
+.goreleaser.yaml
+Dockerfile

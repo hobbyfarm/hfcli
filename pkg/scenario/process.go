@@ -176,9 +176,9 @@ func sortContent(stepsWithID []StepWithID) (steps []hf.ScenarioStep) {
 }
 
 func extractTOML(content []byte) (toml []byte, noToml []byte) {
-	r := regexp.MustCompile("(?s)\\+\\+\\+(.*)\\+\\+\\+")
+	r := regexp.MustCompile(`(?s)\+\+\+(.*)\+\+\+`)
 	tmp := r.Find(content)
-	r2 := regexp.MustCompile("\\+\\+\\+")
+	r2 := regexp.MustCompile(`\+\+\+`)
 	toml = r2.ReplaceAll(tmp, []byte(""))
 	noToml = r.ReplaceAll(content, []byte(""))
 	return toml, []byte(strings.Trim(string(noToml), "\n"))
