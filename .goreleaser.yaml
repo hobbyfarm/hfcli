@@ -8,12 +8,12 @@ builds:
     goos:
       - linux
       - darwin
-dockers:
-  - image_templates:
-    - "hobbyfarm/hfcli:latest"
-    - "hobbyfarm/hfcli:{{ .Tag }}"
-    use: buildx
-    dockerfile: Dockerfile.gorelease
+#dockers:
+#  - image_templates:
+#    - "hobbyfarm/hfcli:latest"
+#    - "hobbyfarm/hfcli:{{ .Tag }}"
+#    use: buildx
+#    dockerfile: Dockerfile.gorelease
 archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of uname.
