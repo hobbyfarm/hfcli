@@ -3,27 +3,31 @@ package info
 import (
 	"context"
 	"fmt"
+
 	hf "github.com/hobbyfarm/gargantua/pkg/apis/hobbyfarm.io/v1"
-	hfClientSet "github.com/hobbyfarm/gargantua/pkg/client/clientset/versioned/typed/hobbyfarm.io/v1"
+
+	// hfClientSet "github.com/hobbyfarm/gargantua/pkg/client/clientset/versioned/typed/hobbyfarm.io/v1"
+	"os"
+	"text/tabwriter"
+
+	hfClientSet "github.com/hobbyfarm/gargantua/pkg/client/clientset/versioned"
 	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
-	"text/tabwriter"
 )
 
 type SessionDetails struct {
 	SessionVMMap map[string][]hf.VirtualMachine
 }
 
-func GetEmail(email string, hfc *hfClientSet.HobbyfarmV1Client) (err error) {
+func GetEmail(email string, Namespace string, hfc *hfClientSet.Clientset) (err error) {
 
-	userid, err := getUser(email, hfc)
+	userid, err := getUser(email, Namespace, hfc)
 	if err != nil {
 		return err
 	}
 
-	sDetails, err := getUserAllocatedVMs(userid, hfc)
+	sDetails, err := getUserAllocatedVMs(userid, Namespace, hfc)
 	if err != nil {
 		return err
 	}
@@ -31,9 +35,9 @@ func GetEmail(email string, hfc *hfClientSet.HobbyfarmV1Client) (err error) {
 	return printReport([]SessionDetails{*sDetails})
 }
 
-func GetAccessCode(accesscode string, hfc *hfClientSet.HobbyfarmV1Client, stats bool) (err error) {
+func GetAccessCode(accesscode string, Namespace string, hfc *hfClientSet.Clientset, stats bool) (err error) {
 
-	seList, err := hfc.ScheduledEvents().List(context.TODO(), metav1.ListOptions{})
+	seList, err := hfc.HobbyfarmV1().ScheduledEvents(Namespace).List(context.TODO(), metav1.ListOptions{})
 
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -66,14 +70,14 @@ func GetAccessCode(accesscode string, hfc *hfClientSet.HobbyfarmV1Client, stats 
 	}
 
 	logrus.Infof("scheduled event %s has accesscode %s", seEvents[0].Spec.Name, accesscode)
-	userIDS, err := getAllUsers(accesscode, hfc)
+	userIDS, err := getAllUsers(accesscode, Namespace, hfc)
 	if err != nil {
 		return err
 	}
 
 	var sDetails []SessionDetails
 	for _, user := range userIDS {
-		s, err := getUserAllocatedVMs(user, hfc)
+		s, err := getUserAllocatedVMs(user, Namespace, hfc)
 		if err != nil {
 			return err
 		}
@@ -86,8 +90,8 @@ func GetAccessCode(accesscode string, hfc *hfClientSet.HobbyfarmV1Client, stats 
 	return printReport(sDetails)
 }
 
-func getUser(email string, hfc *hfClientSet.HobbyfarmV1Client) (userid string, err error) {
-	users, err := hfc.Users().List(context.TODO(), metav1.ListOptions{})
+func getUser(email string, Namespace string, hfc *hfClientSet.Clientset) (userid string, err error) {
+	users, err := hfc.HobbyfarmV1().Users(Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return userid, fmt.Errorf("no users found in cluster")
@@ -106,8 +110,8 @@ func getUser(email string, hfc *hfClientSet.HobbyfarmV1Client) (userid string, e
 	return userid, err
 }
 
-func getAllUsers(accesscode string, hfc *hfClientSet.HobbyfarmV1Client) (userIDS []string, err error) {
-	userList, err := hfc.Users().List(context.TODO(), metav1.ListOptions{})
+func getAllUsers(accesscode string, Namespace string, hfc *hfClientSet.Clientset) (userIDS []string, err error) {
+	userList, err := hfc.HobbyfarmV1().Users(Namespace).List(context.TODO(), metav1.ListOptions{})
 
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -127,8 +131,8 @@ func getAllUsers(accesscode string, hfc *hfClientSet.HobbyfarmV1Client) (userIDS
 	return userIDS, nil
 }
 
-func getUserAllocatedVMs(userID string, hfc *hfClientSet.HobbyfarmV1Client) (sDetails *SessionDetails, err error) {
-	sessionList, err := hfc.Sessions().List(context.TODO(), metav1.ListOptions{})
+func getUserAllocatedVMs(userID string, Namespace string, hfc *hfClientSet.Clientset) (sDetails *SessionDetails, err error) {
+	sessionList, err := hfc.HobbyfarmV1().Sessions(Namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, fmt.Errorf("no active sessions found for the user")
@@ -151,7 +155,7 @@ func getUserAllocatedVMs(userID string, hfc *hfClientSet.HobbyfarmV1Client) (sDe
 	for session, vmclaims := range tmpStore {
 		var vmList []hf.VirtualMachine
 		for _, vmc := range vmclaims {
-			vml, err := getVirtualMachinesForVMC(vmc, hfc)
+			vml, err := getVirtualMachinesForVMC(vmc, Namespace, hfc)
 			if err != nil {
 				return nil, err
 			}
@@ -163,8 +167,8 @@ func getUserAllocatedVMs(userID string, hfc *hfClientSet.HobbyfarmV1Client) (sDe
 	return sDetails, nil
 }
 
-func getVirtualMachinesForVMC(vmc string, hfc *hfClientSet.HobbyfarmV1Client) (vmList []hf.VirtualMachine, err error) {
-	vmClaim, err := hfc.VirtualMachineClaims().Get(context.TODO(), vmc, metav1.GetOptions{})
+func getVirtualMachinesForVMC(vmc string, Namespace string, hfc *hfClientSet.Clientset) (vmList []hf.VirtualMachine, err error) {
+	vmClaim, err := hfc.HobbyfarmV1().VirtualMachineClaims(Namespace).Get(context.TODO(), vmc, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// object has been probably deleted.. no need to check
@@ -176,7 +180,7 @@ func getVirtualMachinesForVMC(vmc string, hfc *hfClientSet.HobbyfarmV1Client) (v
 
 	dbr := vmClaim.Status.DynamicBindRequestId
 
-	dbClaim, err := hfc.DynamicBindRequests().Get(context.TODO(), dbr, metav1.GetOptions{})
+	dbClaim, err := hfc.HobbyfarmV1().DynamicBindRequests(Namespace).Get(context.TODO(), dbr, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return vmList, nil
@@ -186,7 +190,7 @@ func getVirtualMachinesForVMC(vmc string, hfc *hfClientSet.HobbyfarmV1Client) (v
 	}
 
 	for _, vm := range dbClaim.Status.VirtualMachineIds {
-		vmInfo, err := hfc.VirtualMachines().Get(context.TODO(), vm, metav1.GetOptions{})
+		vmInfo, err := hfc.HobbyfarmV1().VirtualMachines(Namespace).Get(context.TODO(), vm, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				continue

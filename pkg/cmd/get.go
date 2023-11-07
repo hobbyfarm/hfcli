@@ -40,7 +40,7 @@ func NewGetScenario() *cobra.Command {
 
 func (sc *GetScenario) Run(cmd *cobra.Command, args []string) error {
 	logrus.Info(args[0], args[1])
-	s, err := scenario.Get(args[0], HfClient)
+	s, err := scenario.Get(args[0], Namespace, HfClient)
 
 	if err != nil {
 		return err
