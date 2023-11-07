@@ -14,12 +14,12 @@ import (
 func Apply(s *hf.Scenario, Namespace string, hfc *hfClientSet.Clientset) (err error) {
 
 	// check if scneario exists //
-	sGet, err := hfc.HobbyfarmV1().Scenarios("Hobbyfarm123").Get(context.TODO(), s.GetName(), v1.GetOptions{})
+	sGet, err := hfc.HobbyfarmV1().Scenarios(Namespace).Get(context.TODO(), s.GetName(), v1.GetOptions{})
 
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			logrus.Infof("creating scenario %s", s.GetName())
-			_, err = hfc.HobbyfarmV1().Scenarios("Hobbyfarm123").Create(context.TODO(), s, v1.CreateOptions{})
+			_, err = hfc.HobbyfarmV1().Scenarios(Namespace).Create(context.TODO(), s, v1.CreateOptions{})
 			return err
 		} else {
 			return err
@@ -31,7 +31,7 @@ func Apply(s *hf.Scenario, Namespace string, hfc *hfClientSet.Clientset) (err er
 		if ok && key == "hfcli" {
 			s.ObjectMeta.ResourceVersion = sGet.ObjectMeta.GetResourceVersion()
 			logrus.Infof("updating scenario %s", s.GetName())
-			_, err = hfc.HobbyfarmV1().Scenarios("Hobbyfarm123").Update(context.TODO(), s, v1.UpdateOptions{})
+			_, err = hfc.HobbyfarmV1().Scenarios(Namespace).Update(context.TODO(), s, v1.UpdateOptions{})
 		} else {
 			err = fmt.Errorf("scenario %s already exists and is not managed by hfcli", sGet.GetName())
 		}
@@ -44,11 +44,11 @@ func Apply(s *hf.Scenario, Namespace string, hfc *hfClientSet.Clientset) (err er
 func Get(name string, Namespace string, hfc *hfClientSet.Clientset) (s *hf.Scenario, err error) {
 	logrus.Infof("downloading scenario %s", name)
 
-	return hfc.HobbyfarmV1().Scenarios("Hobbyfarm123").Get(context.TODO(), name, v1.GetOptions{})
+	return hfc.HobbyfarmV1().Scenarios(Namespace).Get(context.TODO(), name, v1.GetOptions{})
 }
 
 func Delete(name string, Namespace string, hfc *hfClientSet.Clientset) (err error) {
 	logrus.Infof("deleting scenario %s", name)
 
-	return hfc.HobbyfarmV1().Scenarios("Hobbyfarm123").Delete(context.TODO(), name, v1.DeleteOptions{})
+	return hfc.HobbyfarmV1().Scenarios(Namespace).Delete(context.TODO(), name, v1.DeleteOptions{})
 }
