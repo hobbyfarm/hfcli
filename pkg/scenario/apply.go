@@ -5,21 +5,21 @@ import (
 	"fmt"
 
 	hf "github.com/hobbyfarm/gargantua/pkg/apis/hobbyfarm.io/v1"
-	hfClientSet "github.com/hobbyfarm/gargantua/pkg/client/clientset/versioned/typed/hobbyfarm.io/v1"
+	hfClientSet "github.com/hobbyfarm/gargantua/pkg/client/clientset/versioned"
 	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Apply(s *hf.Scenario, hfc *hfClientSet.HobbyfarmV1Client) (err error) {
+func Apply(s *hf.Scenario, Namespace string, hfc *hfClientSet.Clientset) (err error) {
 
 	// check if scneario exists //
-	sGet, err := hfc.Scenarios().Get(context.TODO(), s.GetName(), v1.GetOptions{})
+	sGet, err := hfc.HobbyfarmV1().Scenarios(Namespace).Get(context.TODO(), s.GetName(), v1.GetOptions{})
 
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			logrus.Infof("creating scenario %s", s.GetName())
-			_, err = hfc.Scenarios().Create(context.TODO(), s, v1.CreateOptions{})
+			_, err = hfc.HobbyfarmV1().Scenarios(Namespace).Create(context.TODO(), s, v1.CreateOptions{})
 			return err
 		} else {
 			return err
@@ -31,7 +31,7 @@ func Apply(s *hf.Scenario, hfc *hfClientSet.HobbyfarmV1Client) (err error) {
 		if ok && key == "hfcli" {
 			s.ObjectMeta.ResourceVersion = sGet.ObjectMeta.GetResourceVersion()
 			logrus.Infof("updating scenario %s", s.GetName())
-			_, err = hfc.Scenarios().Update(context.TODO(), s, v1.UpdateOptions{})
+			_, err = hfc.HobbyfarmV1().Scenarios(Namespace).Update(context.TODO(), s, v1.UpdateOptions{})
 		} else {
 			err = fmt.Errorf("scenario %s already exists and is not managed by hfcli", sGet.GetName())
 		}
@@ -41,14 +41,14 @@ func Apply(s *hf.Scenario, hfc *hfClientSet.HobbyfarmV1Client) (err error) {
 	return err
 }
 
-func Get(name string, hfc *hfClientSet.HobbyfarmV1Client) (s *hf.Scenario, err error) {
+func Get(name string, Namespace string, hfc *hfClientSet.Clientset) (s *hf.Scenario, err error) {
 	logrus.Infof("downloading scenario %s", name)
 
-	return hfc.Scenarios().Get(context.TODO(), name, v1.GetOptions{})
+	return hfc.HobbyfarmV1().Scenarios(Namespace).Get(context.TODO(), name, v1.GetOptions{})
 }
 
-func Delete(name string, hfc *hfClientSet.HobbyfarmV1Client) (err error) {
+func Delete(name string, Namespace string, hfc *hfClientSet.Clientset) (err error) {
 	logrus.Infof("deleting scenario %s", name)
 
-	return hfc.Scenarios().Delete(context.TODO(), name, v1.DeleteOptions{})
+	return hfc.HobbyfarmV1().Scenarios(Namespace).Delete(context.TODO(), name, v1.DeleteOptions{})
 }

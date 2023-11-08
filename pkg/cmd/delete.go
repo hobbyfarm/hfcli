@@ -40,5 +40,5 @@ func NewDeleteScenario() *cobra.Command {
 
 func (sc *DeleteScenario) Run(cmd *cobra.Command, args []string) error {
 	logrus.Info(args[0])
-	return scenario.Delete(args[0], HfClient)
+	return scenario.Delete(args[0], Namespace, HfClient)
 }

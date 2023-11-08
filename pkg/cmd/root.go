@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	hfClientSet "github.com/hobbyfarm/gargantua/pkg/client/clientset/versioned/typed/hobbyfarm.io/v1"
+	// hfClientSet "github.com/hobbyfarm/gargantua/pkg/client/clientset/versioned/typed/hobbyfarm.io/v1"
+	hfClientSet "github.com/hobbyfarm/gargantua/pkg/client/clientset/versioned"
 	command "github.com/rancher/wrangler-cli"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
@@ -15,7 +16,7 @@ type Hfcli struct {
 
 var (
 	Namespace string
-	HfClient  *hfClientSet.HobbyfarmV1Client
+	HfClient  *hfClientSet.Clientset
 )
 
 func App() *cobra.Command {
